@@ -64,6 +64,9 @@ const HistoryScreen = () => {
         // attrName = decryptText(attrName)
         // client.add_attribute(attrName)
 
+        //lets first fetch the uuid we need
+        
+
         client.encryptText(textToEncrypt).then(passedEncryptedText => {
             setEncryptedText(passedEncryptedText)
         }).catch(error => {

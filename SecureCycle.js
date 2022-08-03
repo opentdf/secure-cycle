@@ -12,7 +12,7 @@ import HomeScreen from './scenes/Home';
 import AnalyticsScreen from './scenes/Analytics';
 import ProfileScreen from './scenes/Profile';
 import ResourcesScreen from './scenes/Resources';
-
+import Config from "react-native-config";
     const CLIENT_ID = "tdf-client";
     const CLIENT_SECRET = "123-456";
     const ORGANIZATION_NAME = "tdf";
@@ -66,10 +66,12 @@ function SecureCycle(props) {
             SplashScreen.hide();
         }, 1500)
         //init our client
-        client.setOIDCEndpoint('http://192.168.86.39:3000');
-        client.setKASEndpoint('http://192.168.86.39:3000/api/kas');
-        client.setClientId(CLIENT_ID);
-        client.setClientSecret(CLIENT_SECRET);
+        client.setOIDCEndpoint(Config.OIDC_ENDPOINT);
+        client.setKASEndpoint(Config.KAS_ENDPOINT);
+        client.setClientId(Config.CLIENT_ID);
+        client.setClientSecret(Config.CLIENT_SECRET);
+        //make sure to set our default DataAttribute for the user, so that we can start encrypting!
+        client.setDataAttribute(Config.DATA_ATTRIBUTE);
     }, [])
     const {
         colors

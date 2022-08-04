@@ -2,9 +2,11 @@ import React, { useEffect } from 'react';
 import { NativeBaseProvider, ColorMode } from 'native-base';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NavigationContainer } from '@react-navigation/native';
+import { Provider as ReduxProvider } from 'react-redux'
+
 import SecureCycle from './SecureCycle'
 import theme from './theme';
-
+import { store } from './store/store'
 
 export default ({ children, defaultTheme }) => {
 
@@ -27,10 +29,12 @@ export default ({ children, defaultTheme }) => {
     },
   };
   return (
-    <NativeBaseProvider theme={theme} colorModeManager={colorModeManager}>
-      <NavigationContainer>
-        <SecureCycle />
-      </NavigationContainer>
-    </NativeBaseProvider>
+    <ReduxProvider store={store}>
+      <NativeBaseProvider theme={theme} colorModeManager={colorModeManager}>
+        <NavigationContainer>
+          <SecureCycle />
+        </NavigationContainer>
+      </NativeBaseProvider>
+    </ReduxProvider>
   );
 };

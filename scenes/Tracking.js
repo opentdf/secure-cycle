@@ -4,18 +4,23 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'
 import Ionicons from 'react-native-vector-icons/Ionicons'
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { useSelector, useDispatch } from 'react-redux'
+
 import { Box, Button, Icon, Text, TextArea, Input, Factory, View, Column, Row, useTheme, Center, Heading, Switch, Spinner } from 'native-base'
 import { formatISO } from 'date-fns'
 import client from 'react-native-opentdf';
 import Config from 'react-native-config'
 import secureRequest from './../util/secureRequest'
 import { useToast } from 'native-base';
+import { fetchUserCycleData, addCycleItem, addCycleItems } from './../store/cycleSlice'
+
 Tracking.propTypes = {
 
 };
 
 function Tracking({ navigation }) {
     const { colors } = useTheme();
+    const dispatch = useDispatch();
     const toast = useToast();
     const [date, setDate] = React.useState(new Date());
     const [symptoms, setSymptoms] = React.useState(``);
@@ -30,7 +35,6 @@ function Tracking({ navigation }) {
                 "on_period": onPeriod,
                 symptoms,
             }
-            debugger;
             let encryptedPayload = {};
 
             //loop through and encrypt each value
@@ -39,7 +43,6 @@ function Tracking({ navigation }) {
             for (let i = 0; i < keys.length; i++) {
                 const key = keys[i];
                 let value = payload[key]
-                debugger;
                 if (value === `` || value == null) {
                     alert(`${key} is a required value. Please try again.`)
                     return;
@@ -54,6 +57,8 @@ function Tracking({ navigation }) {
             console.log(payload);
             console.log(`=====Encrypted Payload=====`);
             console.log(encryptedPayload);
+            //lets proactively add this data to our store
+            dispatch(addCycleItem(payload));
             //now lets get our uuid (user id)
             const uuidResp = await secureRequest.get(`/uuid?client_id=${Config.CLIENT_ID}`)
             const uuid = uuidResp.data;
@@ -62,6 +67,7 @@ function Tracking({ navigation }) {
             console.log(`=====Response=====`);
             console.log(`Resp Status: ${resp.status}`);
             console.log(`Data: ${JSON.stringify(resp.data)}`);
+            
             setSymptoms(``)
             setDate(new Date())
             setOnPeriod(true)

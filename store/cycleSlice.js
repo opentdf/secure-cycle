@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import Config from 'react-native-config'
 import secureRequest from './../util/secureRequest'
 import client from 'react-native-opentdf'
+import { parse, formatISO } from 'date-fns'
 
 async function decryptObjectValues(data) {
     const keys = Object.keys(data);
@@ -17,7 +18,7 @@ async function decryptObjectValues(data) {
         if(value == "true" || value == "false"){
             value = JSON.parse(value)
         }
-  
+        
         data[key] = value
     }
     return data
@@ -35,7 +36,6 @@ const fetchUserCycleData = createAsyncThunk(
             const dataResp = await secureRequest.post(`/getdate?uuid=${uuid}`, [])
             const dataArr = dataResp.data;
             //now lets decrypt our data
-
             let decryptedData = []
             //lets iterate through each item returned from the server and decrypt it
             for (index in dataArr) {
@@ -66,17 +66,17 @@ export const cycleSlice = createSlice({
             // doesn't actually mutate the state because it uses the Immer library,
             // which detects changes to a "draft state" and produces a brand new
             // immutable state based off those changes
-            state.cycleDays.push(cycleDay);
+            state.cycleDays.push(cycleDay.payload);
         },
         addCycleItems: (state, cycleDays) => {
             // Redux Toolkit allows us to write "mutating" logic in reducers. It
             // doesn't actually mutate the state because it uses the Immer library,
             // which detects changes to a "draft state" and produces a brand new
             // immutable state based off those changes
-            state.cycleDays.concat(cycleDays);
+            state.cycleDays.concat(cycleDays.payload);
         },
         removeCycleItem: (state, index) => {
-            state.cycleDays.splice(index, 1);
+            state.cycleDays.splice(index.payload, 1);
         },
 
         clearAllCycleData: (state) => {
@@ -88,7 +88,6 @@ export const cycleSlice = createSlice({
         builder.addCase(fetchUserCycleData.fulfilled, (state, action) => {
             // Add user to the state array
             state.cycleDays = state.cycleDays.concat(action.payload)
-            console.log(state.cycleDays)
         })
     },
 })

@@ -2,20 +2,24 @@ import React, { useEffect } from 'react';
 import PropTypes from 'prop-types';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'
+import AntDesign from 'react-native-vector-icons/AntDesign'
 import Ionicons from 'react-native-vector-icons/Ionicons'
-import { Box, Icon, Text, Factory, View, Column, Row, useTheme, } from 'native-base'
+import { Box, Icon, Text, Factory, View, Column, Row, useTheme, Spinner, Heading, Image, Center } from 'native-base'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import SplashScreen from 'react-native-splash-screen'
+import Config from "react-native-config";
+import axios from 'axios'
+import { useSelector, useDispatch } from 'react-redux'
+import { fetchUserCycleData, addCycleItem, addCycleItems } from './store/cycleSlice'
+import { addUserId, removeUserId } from './store/userSlice'
 
 import client from 'react-native-opentdf'
 import HomeScreen from './scenes/Home';
 import AnalyticsScreen from './scenes/Analytics';
 import ProfileScreen from './scenes/Profile';
 import ResourcesScreen from './scenes/Resources';
-import Config from "react-native-config";
-    const CLIENT_ID = "tdf-client";
-    const CLIENT_SECRET = "123-456";
-    const ORGANIZATION_NAME = "tdf";
+import TrackingScreen from './scenes/Tracking';
+import secureRequest from './util/secureRequest'
 
 
 //create the tab navigator
@@ -32,6 +36,7 @@ SecureCycle.propTypes = {
 
 };
 
+
 const renderTabIcon = (focused, color, size, route, themeColors) => {
     let iconName;
     let styleProps = {}
@@ -39,6 +44,10 @@ const renderTabIcon = (focused, color, size, route, themeColors) => {
         iconName = 'ios-home-outline';
     } else if (route.name === 'Analytics') {
         iconName = 'ios-stats-chart-outline';
+
+    } else if (route.name === 'Tracking') {
+        iconName = 'ios-stats-chart-outline';
+        return <Icon as={AntDesign} size="5xl" name={`pluscircle`} color={color} {...styleProps} />;
 
     } else if (route.name === 'Profile') {
         iconName = 'person-circle-outline';
@@ -59,31 +68,67 @@ const renderTabIcon = (focused, color, size, route, themeColors) => {
 };
 
 function SecureCycle(props) {
-
+    const dispatch = useDispatch();
+    const userId = useSelector((state) => state.user.userId)
+    const cycleData = useSelector((state) => state.cycle.cycleDays)
+    const [loadingData, setLoadingData] = React.useState(true)
     useEffect(() => {
         //lets give everyone a chance to see our pretty splash screen
-        setTimeout(() => {
-            SplashScreen.hide();
-        }, 1500)
+        setLoadingData(true)
         //init our client
         client.setOIDCEndpoint(Config.OIDC_ENDPOINT);
         client.setKASEndpoint(Config.KAS_ENDPOINT);
         client.setClientId(Config.CLIENT_ID);
         client.setClientSecret(Config.CLIENT_SECRET);
         //make sure to set our default DataAttribute for the user, so that we can start encrypting!
-        client.setDataAttribute(Config.DATA_ATTRIBUTE);
+        //first we'll fetch the needed uuid
+        const configureDataAttributesAndPullInitialData = async () => {
+            try {
+                const resp = await secureRequest.get(`/uuid?client_id=${Config.CLIENT_ID}`)
+                const uuid = resp.data;
+                await dispatch(addUserId(uuid));
+                client.addDataAttribute(`${Config.BASE_DATA_ATTR}/${uuid}`);
+                await dispatch(fetchUserCycleData(uuid))
+                setLoadingData(false)
+                SplashScreen.hide();
+            } catch (error) {
+                console.error(error)
+                debugger;
+            }
+        }
+
+
+
+        configureDataAttributesAndPullInitialData();
+
     }, [])
     const {
         colors
     } = useTheme();
 
+    if (loadingData == true) {
+        return (
+            <Box height={`100%`} width={`100%`} paddingTop={`50%`} backgroundColor={`white`}>
+                <Center>
+                <Column backgroundColor="white">
+                    <Image resizeMode={`center`} size={`2xl`} alt="Secure Cycle"  source={require(`./design_and_branding/splash-screen-logo-small.png`)} />
+                    {/* <Heading color="secureCycle.dark" fontSize="md"> */}
+                        {/* Securely Loading Cycle Data */}
+                    {/* </Heading> */}
+                    <Spinner loading={loadingData} color={`secureCycle.dark`} size="lg" accessibilityLabel="Loading data..." />
+                </Column>
+                </Center>
+            </Box>
+        )
+    }
     return (
         <Box safeArea h="100%" backgroundColor="secureCycle.dark">
             <Tab.Navigator safeAreaInsets={{ top: 0, left: 0, right: 0, bottom: 0 }} screenOptions={({ route }) => ({
                 tabBarIcon: ({ focused, color, size }) => renderTabIcon(focused, color, size, route, colors),
-                tabBarActiveTintColor: colors.secureCycle["tertiary"],
+                tabBarActiveTintColor: (route.name == "Tracking") ? colors.secureCycle["dark"] : colors.secureCycle["tertiary"],
                 tabBarInactiveTintColor: colors.secureCycle["dark"],
-                tabBarLabel: route.name,
+                tabBarLabel: (route.name == "Tracking") ? "" : route.name,
+
                 header: () => <Box></Box>,
                 tabBarItemStyle: {
                     backgroundColor: colors.secureCycle["white"],
@@ -92,8 +137,9 @@ function SecureCycle(props) {
                     backgroundColor: colors.secureCycle["muted"],
                 },
                 tabBarStyle: {
-                    padding: 0,
+                    paddingTop: 10,
                     margin: 0,
+                    height: 60,
                     shadowColor: "#000",
                     shadowOffset: {
                         width: 0,
@@ -107,6 +153,7 @@ function SecureCycle(props) {
             })}>
                 <Tab.Screen name="Home" component={HomeScreen} />
                 <Tab.Screen name="Analytics" component={AnalyticsScreen} />
+                <Tab.Screen name="Tracking" component={TrackingScreen} />
                 <Tab.Screen name="Profile" component={ProfileScreen} />
                 <Tab.Screen name="Resources" component={ResourcesScreen} />
             </Tab.Navigator>

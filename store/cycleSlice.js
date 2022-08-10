@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'
 import Config from 'react-native-config'
 import secureRequest from './../util/secureRequest'
+import encryptedDiskStorage from './../util/encryptedDiskStorage'
 import client from 'react-native-opentdf'
 import { parse, formatISO } from 'date-fns'
 
@@ -16,6 +17,10 @@ async function decryptObjectValues(data) {
         value = await client.decryptText(value)
         //now we need to account for the data type
         if(value == "true" || value == "false"){
+            value = JSON.parse(value)
+        }
+        
+        if(key == "symptoms"){
             value = JSON.parse(value)
         }
         
@@ -42,12 +47,12 @@ const fetchUserCycleData = createAsyncThunk(
                 const decryptedDat = await decryptObjectValues(dataArr[index]);
                 decryptedData.push(decryptedDat)
             }
+            //now lets cache our data before returning
+            await encryptedDiskStorage.storeCacheData(decryptedData)
             //now lets add our data to the store
-            //    await dispatch(addCycleItems(decryptedData))
             return decryptedData;
         } catch (error) {
             console.error(error)
-            debugger;
         }
     }
 )
@@ -73,7 +78,7 @@ export const cycleSlice = createSlice({
             // doesn't actually mutate the state because it uses the Immer library,
             // which detects changes to a "draft state" and produces a brand new
             // immutable state based off those changes
-            state.cycleDays.concat(cycleDays.payload);
+            state.cycleDays = state.cycleDays.concat(cycleDays.payload);
         },
         removeCycleItem: (state, index) => {
             state.cycleDays.splice(index.payload, 1);

@@ -12,7 +12,7 @@ import axios from 'axios'
 import { useSelector, useDispatch } from 'react-redux'
 import { fetchUserCycleData, addCycleItem, addCycleItems } from './store/cycleSlice'
 import { addUserId, removeUserId } from './store/userSlice'
-
+import encryptedDiskStorage from './util/encryptedDiskStorage'
 import client from 'react-native-opentdf'
 import HomeScreen from './scenes/Home';
 import AnalyticsScreen from './scenes/Analytics';
@@ -24,12 +24,6 @@ import secureRequest from './util/secureRequest'
 
 //create the tab navigator
 const Tab = createBottomTabNavigator();
-
-// const StyledTab = Factory(Tab);
-// const StyledTabNavigator = Factory(Tab.Navigator);
-// const StyledTabScreen = Factory(Tab.Screen);
-// return <FactoryView bg="emerald.400" borderRadius={4} size={16} />;
-
 
 //add any required props here
 SecureCycle.propTypes = {
@@ -64,7 +58,6 @@ const renderTabIcon = (focused, color, size, route, themeColors) => {
 
     // You can return any component that you like here!
     return <Icon as={Ionicons} size="2xl" name={iconName} color={color} {...styleProps} />;
-    //  <Ionicons name={iconName} size={size} color={color} />;
 };
 
 function SecureCycle(props) {
@@ -88,7 +81,15 @@ function SecureCycle(props) {
                 const uuid = resp.data;
                 await dispatch(addUserId(uuid));
                 client.addDataAttribute(`${Config.BASE_DATA_ATTR}/${uuid}`);
+                //attempt to load the cached data first, so we can get the user past the loading screen faster
+                // const cacheData = await encryptedDiskStorage.getCachedData()
+                const cacheData = null
+                if (cacheData) {
+                    dispatch(addCycleItems(cacheData))
+                    setLoadingData(false)
+                }
                 await dispatch(fetchUserCycleData(uuid))
+
                 setLoadingData(false)
                 SplashScreen.hide();
             } catch (error) {
@@ -112,9 +113,6 @@ function SecureCycle(props) {
                 <Center>
                 <Column backgroundColor="white">
                     <Image resizeMode={`center`} size={`2xl`} alt="Secure Cycle"  source={require(`./design_and_branding/splash-screen-logo-small.png`)} />
-                    {/* <Heading color="secureCycle.dark" fontSize="md"> */}
-                        {/* Securely Loading Cycle Data */}
-                    {/* </Heading> */}
                     <Spinner loading={loadingData} color={`secureCycle.dark`} size="lg" accessibilityLabel="Loading data..." />
                 </Column>
                 </Center>

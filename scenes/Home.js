@@ -16,7 +16,7 @@ import { createMaterialTopTabNavigator } from '@react-navigation/material-top-ta
 import { NavigationContainer } from '@react-navigation/native';
 import _ from 'lodash'
 import client from 'react-native-opentdf';
-import { parseISO, parse, format } from 'date-fns';
+import { parseISO, addDays, subDays, parse, format } from 'date-fns';
 
 
 const TopTab = createMaterialTopTabNavigator();
@@ -94,13 +94,8 @@ const HistoryScreen = () => {
 
         //remove the focus from the input field
         encryptTextRef.current.blur();
-        // let attrName = fetch(`api/attributes/:username`))`)
-        // attrName = decryptText(attrName)
-        // client.add_attribute(attrName)
 
         //lets first fetch the uuid we need
-
-
         client.encryptText(textToEncrypt).then(passedEncryptedText => {
             setEncryptedText(passedEncryptedText)
         }).catch(error => {
@@ -164,7 +159,7 @@ const HistoryScreen = () => {
         const rendHistoryList = cycleData.map((cycleItem, idx) => {
             return (
                 <Box key={`history_view_item_${idx}`}>
-                    <Box  paddingLeft={15} paddingRight={15} paddingTop={15}>
+                    <Box paddingLeft={15} paddingRight={15} paddingTop={15}>
                         <Row>
                             <Heading>{format(parseISO(cycleItem.date), `MMM`)} {format(parseISO(cycleItem.date), `dd`)}</Heading>
                             {(cycleItem.on_period == true) ? <Icon as={SimpleLineIcons} color="secureCycle.pink" size={`lg`} marginLeft={2} marginTop={1} name={"drop"} /> : null}
@@ -209,6 +204,12 @@ function MonthScreen(props) {
     } = useTheme();
     const cycleData = useSelector(state => state.cycle.cycleDays);
 
+    const handleDayPress = (day) => {
+        props.navigation.navigate('DAY', {
+            day: day
+        });
+    }
+
 
     return (
         <>
@@ -217,7 +218,7 @@ function MonthScreen(props) {
                     <Column>
                         <CalendarList
                             markedDates={formatCycleData(cycleData)}
-                            firstDay={1} onDayPress={(day) => alert(`Placeholder function for loading cycle data for day: ${day.dateString}`)} />
+                            firstDay={1} onDayPress={(day) => handleDayPress(day)} />
                     </Column>
                 </Box>
             </CalendarProvider>
@@ -229,9 +230,21 @@ function DayScreen(props) {
     const {
         colors
     } = useTheme();
+    const day = props.route.params.day
+    const [selectedDay, setSelectedDay] = React.useState(day || new Date().toISOString());
     const cycleData = useSelector(state => state.cycle.cycleDays);
+    let selectedCycleData = cycleData.filter(cycleDay => {
+        const formattedDate = format(parseISO(cycleDay.date), `yyyy-MM-dd`);
+        const selectedDate = format(parseISO(selectedDay), `yyyy-MM-dd`);
+        return formattedDate == selectedDate
+    });
 
-
+    // we'll check for this null later
+    if (selectedCycleData.length > 0) {
+        selectedCycleData = selectedCycleData[0]
+    } else {
+        selectedCycleData = null;
+    }
 
     const renderPeriodPrediction = () => {
         //this is hardcoded, we should fix this later.
@@ -253,10 +266,7 @@ function DayScreen(props) {
         )
     }
 
-
-
     const renderFertileDays = () => {
-        // const fertileDaysCount = calculateFertileEstimate();
         const fertileDaysCount = 1;
         const rendFertileItems = []
         for (let i = 0; i < fertileDaysCount; i++) {
@@ -267,7 +277,6 @@ function DayScreen(props) {
     }
 
     const renderOvulationDays = () => {
-        // const OvulationDaysCount = calculateOvulationEstimate();
         const OvulationDaysCount = 1;
         const rendOvulationItems = []
         for (let i = 0; i < OvulationDaysCount; i++) {
@@ -278,7 +287,6 @@ function DayScreen(props) {
     }
 
     const renderPeriodDays = () => {
-        // const PeriodDaysCount = calculatePeriodEstimate();
         const PeriodDaysCount = 1;
         const rendPeriodItems = []
         for (let i = 0; i < PeriodDaysCount; i++) {
@@ -310,6 +318,141 @@ function DayScreen(props) {
             </Box>
         )
     }
+    const handleDayPress = (day) => {
+        setSelectedDay(parseISO(day.dateString).toISOString())
+    }
+
+    const renderSymptoms = (symptoms) => {
+        const symptomsIcons = symptoms.map((symptom, index) => {
+            let iconName = null;
+            let iconColor = `secureCycle.white`;
+            let iconOutline = true;
+            let iconSet = MaterialCommunityIcons;
+            //these are all the "known" symptoms that we currently support
+            // ['headache', 'nausea', 'bloating', 'cramps']"
+            if (symptom.toLowerCase().includes("headache")) {
+                iconName = "head-question";
+                iconColor = "secureCycle.dark"
+                iconOutline = false;
+            }
+
+            if (symptom.toLowerCase().includes("nausea")) {
+                iconName = "emoticon-sick";
+                iconColor = "secureCycle.dark"
+                iconOutline = false;
+                iconSet = MaterialCommunityIcons;
+            }
+
+            if (symptom.toLowerCase().includes("bloat")) {
+                iconName = "airballoon";
+                iconColor = "secureCycle.dark"
+                iconOutline = false;
+                iconSet = MaterialCommunityIcons;
+            }
+
+            if (symptom.toLowerCase().includes("cramp")) {
+                iconName = "emoticon-cry";
+                iconColor = "secureCycle.dark"
+                iconOutline = false;
+                iconSet = MaterialCommunityIcons;
+            }
+
+            return (
+                <Column>
+                    <Column>
+                        <IconButton backgroundColor={"secureCycle.dark"} rounded={"full"} borderColor={(iconOutline) ? "secureCycle.dark" : "secureCycle.white"} variant={(iconOutline) ? "outline" : "ghost"} _icon={{
+                            "as": iconSet,
+                            "name": iconName,
+                            "color": (iconOutline) ? iconColor : "secureCycle.white",
+                            backgroundColor: (iconOutline) ? "secureCycle.white" : "secureCycle.dark",
+                        }}
+                            onPress={() => null}
+                        />
+                    </Column>
+                    <Text>{symptom}</Text>
+                </Column>
+            )
+        })
+
+        return (
+            <Row space={"md"}>
+                {symptomsIcons}
+            </Row>
+        )
+    }
+
+    const renderCycleData = () => {
+        const renderNoData = () => {
+            return (
+                <Column width="100%">
+                    <Center>
+                        <Heading size="xs" color="secureCycle.dark">No Cycle Data Found</Heading>
+                    </Center>
+                </Column>
+            )
+        }
+        return (
+            <Box background={"#FFF"} paddingY="5">
+                <Row>
+                    <Column width="20%">
+                        <Center>
+                            <IconButton variant="ghost" _icon={{
+                                "as": MaterialIcons,
+                                "name": "chevron-left",
+                                "color": "secureCycle.dark",
+                            }}
+                                onPress={() => setSelectedDay(subDays(parseISO(selectedDay), 1).toISOString())}
+                            />
+                        </Center>
+                    </Column>
+                    <Column width="60%" paddingTop={2}>
+                        <Center>
+                            {/* Day */}
+                            <Heading size="md" textAlign={"center"}>{format(parseISO(selectedDay), `MMMM, d, yyyy`)}</Heading>
+                        </Center>
+                    </Column>
+                    <Column width="20%">
+                        <Center>
+                            <IconButton variant="ghost" _icon={{
+                                "as": MaterialIcons,
+                                "name": "chevron-right",
+                                "color": "secureCycle.dark",
+                            }}
+                                onPress={() => setSelectedDay(addDays(parseISO(selectedDay), 1).toISOString())}
+                            />
+                        </Center>
+                    </Column>
+                </Row>
+                <Row marginY={`2`} space="md">
+                    {/* Symptoms */}
+
+                    {(!selectedCycleData) ? renderNoData() :
+                        (<>
+                            <Column width="20%">
+                                <Center>
+                                    {(selectedCycleData.on_period) ? <IconButton backgroundColor={"secureCycle.dark"} rounded={"full"} borderColor={"secureCycle.white"} variant={"ghost"} _icon={{
+                                        "as": SimpleLineIcons,
+                                        "name": "drop",
+                                        "color": "secureCycle.white",
+                                        backgroundColor: "secureCycle.dark",
+                                    }}
+                                        onPress={() => null}
+                                    /> : null}
+                                </Center>
+                            </Column>
+                            <Column width="60%">
+                                <Center>
+                                    <Column>
+                                        {renderSymptoms(selectedCycleData.symptoms)}
+                                    </Column>
+                                </Center>
+                            </Column>
+                        </>)
+                    }
+                </Row>
+            </Box>
+        )
+    }
 
     return (
         <>
@@ -317,16 +460,17 @@ function DayScreen(props) {
                 <ScrollView>
                     <Box backgroundColor="secureCycle.white" alignContent="center">
                         <Column>
-                            <Column>
-                                <WeekCalendar markedDates={formatCycleData(cycleData)}
-                                    firstDay={1}
-                                    onDayPress={(day) => alert(`Placeholder function for loading cycle data for day: ${day.dateString}`)}
-                                />
-                            </Column>
+                            <WeekCalendar markedDates={formatCycleData(cycleData)}
+                                date={_.cloneDeep(selectedDay)}
+                                firstDay={1}
+                                initialDate={_.cloneDeep(selectedDay)}
+                                onDayPress={(day) => handleDayPress(day)}
+                            />
                             {renderGeneralFertOvPeriodPrediction()}
+                            {renderCycleData()}
                         </Column>
                     </Box>
-                    <Box marginTop={100}>
+                    <Box marginTop={10}>
                         <Column h={`100%`} >
                             {renderPeriodPrediction()}
                         </Column>
@@ -359,7 +503,9 @@ function Home() {
                 }
             })}
         >
-            <TopTab.Screen name="DAY" component={DayScreen} />
+            <TopTab.Screen name="DAY" initialParams={{
+                day: new Date().toISOString(),
+            }} component={DayScreen} />
             <TopTab.Screen name="MONTH" component={MonthScreen} />
             <TopTab.Screen name="HISTORY" component={HistoryScreen} />
         </TopTab.Navigator>

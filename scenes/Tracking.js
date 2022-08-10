@@ -1,12 +1,13 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'
+import Entypo from 'react-native-vector-icons/Entypo'
+import SimpleLineIcons from 'react-native-vector-icons/SimpleLineIcons'
 import Ionicons from 'react-native-vector-icons/Ionicons'
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useSelector, useDispatch } from 'react-redux'
 
-import { Box, Button, Icon, Text, TextArea, Input, Factory, View, Column, Row, useTheme, Center, Heading, Switch, Spinner } from 'native-base'
+import { Box, Button, Icon, Text, TextArea, Input, Factory, View, Column, Row, useTheme, Center, Heading, Switch, Spinner, IconButton } from 'native-base'
 import { formatISO } from 'date-fns'
 import client from 'react-native-opentdf';
 import Config from 'react-native-config'
@@ -17,6 +18,56 @@ import { fetchUserCycleData, addCycleItem, addCycleItems } from './../store/cycl
 Tracking.propTypes = {
 
 };
+
+
+const STATIC_SYMPTOMS = [
+    {
+        "type": "flow",
+        "name": "none",
+        "label": "None",
+        "iconFont": SimpleLineIcons,
+        "iconName": "drop",
+    },
+    {
+        "type": "flow",
+        "name": "heavy",
+        "label": "Heavy",
+        "iconFont": SimpleLineIcons,
+        "iconName": "drop",
+    },
+    {
+        "type": "flow",
+        "name": "spotting",
+        "label": "Spotting",
+        "iconFont": Entypo,
+        "iconName": "water",
+    }
+]
+
+const SymptomList = (props) => {
+    const renderFlowButtons = STATIC_SYMPTOMS.filter((symptom) =>  symptom.type == `flow`).map((symptom) => {
+        return (
+            
+            <IconButton rounded="full" borderColor="secureCycle.dark" key={`${symptom.name}_outline_${symptom.type}`} variant={`outline`} _icon={{
+                as: symptom.iconFont,
+                name: symptom.iconName,
+                color: `secureCycle.dark`,
+                backgroundColor: `secureCycle.`,
+              }} onPress={() => props.onPress(symptom.name)}
+              >
+            </IconButton>
+        )
+    })
+
+
+    return (
+        <Box>
+            <Row>
+            {renderFlowButtons}
+            </Row>
+        </Box>
+    )
+}
 
 function Tracking({ navigation }) {
     const { colors } = useTheme();
@@ -53,10 +104,6 @@ function Tracking({ navigation }) {
                 encryptedPayload[key] = await client.encryptText(value);
             }
 
-            console.log(`=====Raw Payload=====`);
-            console.log(payload);
-            console.log(`=====Encrypted Payload=====`);
-            console.log(encryptedPayload);
             //lets proactively add this data to our store
             dispatch(addCycleItem(payload));
             //now lets get our uuid (user id)
@@ -64,9 +111,6 @@ function Tracking({ navigation }) {
             const uuid = uuidResp.data;
             //okay we're good to go. Lets send our data
             const resp = await secureRequest.post(`/date?uuid=${uuid}`, encryptedPayload)
-            console.log(`=====Response=====`);
-            console.log(`Resp Status: ${resp.status}`);
-            console.log(`Data: ${JSON.stringify(resp.data)}`);
             
             setSymptoms(``)
             setDate(new Date())

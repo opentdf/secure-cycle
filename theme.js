@@ -43,6 +43,7 @@ const theme = extendTheme({
           }
         }
       }
+    //these are future settings that we can customize, should we choose to. 
     // fontConfig: {},
     // fonts: {},
     // config: {

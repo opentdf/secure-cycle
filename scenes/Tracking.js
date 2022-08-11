@@ -84,7 +84,12 @@ function Tracking({ navigation }) {
             const payload = {
                 date: formatISO(date),
                 "on_period": onPeriod,
-                symptoms,
+                //NOTE: this is just a hack for now, everywhere else in the app is treating symptoms as an array
+                // however we haven't had a chance to build out the "symptoms input" UI yet 
+                //so for demo purposes we're just allowing the user to enter their symptoms into a TextArea, as a string
+                //thus, on insert, we're just wrapping the string in an array and sending it to the server
+                //that way it'll play nice with the rest of the app
+                symptoms: [symptoms],
             }
             let encryptedPayload = {};
 
@@ -108,7 +113,10 @@ function Tracking({ navigation }) {
             dispatch(addCycleItem(payload));
             //now lets get our uuid (user id)
             const uuidResp = await secureRequest.get(`/uuid?client_id=${Config.CLIENT_ID}`)
-            const uuid = uuidResp.data;
+            let  uuid = uuidResp.data;
+            if(uuid) {
+                uuid = uuid[0];
+            }
             //okay we're good to go. Lets send our data
             const resp = await secureRequest.post(`/date?uuid=${uuid}`, encryptedPayload)
             

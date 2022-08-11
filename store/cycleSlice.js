@@ -36,7 +36,10 @@ const fetchUserCycleData = createAsyncThunk(
         try {
             //lets grab our uuid id again
             const uuIdresp = await secureRequest.get(`/uuid?client_id=${Config.CLIENT_ID}`)
-            const uuid = uuIdresp.data;
+            let  uuid = uuidResp.data;
+            if(uuid) {
+                uuid = uuid[0];
+            }
             //now lets get our initial data
             const dataResp = await secureRequest.post(`/getdate?uuid=${uuid}`, [])
             const dataArr = dataResp.data;

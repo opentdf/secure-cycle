@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
     ImageBackground
 } from 'react-native'
@@ -27,14 +27,7 @@ DayScreen.propTypes = {
 };
 
 
-
 const formatCycleData = (cycleData) => {
-    let mockCycleData = {
-        '2012-05-16': { selected: true, marked: true, selectedColor: 'blue' },
-        '2012-05-17': { marked: true },
-        '2012-05-18': { marked: true, dotColor: 'red', activeOpacity: 0 },
-        '2012-05-19': { disabled: true, disableTouchEvent: true }
-    };
     let formattedCycleData = {};
     for (let key in cycleData) {
         let rawData = cycleData[key];
@@ -74,7 +67,104 @@ const calculateFertileEstimate = () => {
     return fertileDays;
 }
 
-const HistoryScreen = () => {
+const renderSymptoms = (cyclData, navigation) => {
+    const symptoms = cyclData.symptoms;
+    const symptomsIcons = symptoms.map((symptom, index) => {
+        let iconName = null;
+        let iconColor = `secureCycle.white`;
+        let iconOutline = true;
+        let iconSet = MaterialCommunityIcons;
+        let iconLabel = null
+        //these are all the "known" symptoms that we currently support
+        // ['headache', 'nausea', 'bloating', 'cramps']"
+        if (symptom.toLowerCase().includes("headache")) {
+            iconName = "head-question";
+            iconColor = "secureCycle.dark"
+            iconOutline = false;
+        } else if (symptom.toLowerCase().includes("nausea")) {
+            iconName = "emoticon-sick";
+            iconColor = "secureCycle.dark"
+            iconOutline = false;
+            iconSet = MaterialCommunityIcons;
+        } else if (symptom.toLowerCase().includes("bloat")) {
+            iconName = "airballoon";
+            iconColor = "secureCycle.dark"
+            iconOutline = false;
+            iconSet = MaterialCommunityIcons;
+        } else if (symptom.toLowerCase().includes("cramp")) {
+            iconName = "emoticon-cry";
+            iconColor = "secureCycle.dark"
+            iconOutline = false;
+            iconSet = MaterialCommunityIcons;
+        } else {
+            iconName = "account-question";
+            iconColor = "secureCycle.dark"
+            iconOutline = false;
+            iconLabel = "Other"
+            iconSet = MaterialCommunityIcons;
+        }
+
+        return (
+            <Column key={`symptom_data_${cyclData.date}_${index}`}>
+                <Column marginX={3}>
+                    <IconButton backgroundColor={"secureCycle.dark"} rounded={"full"} borderColor={(iconOutline) ? "secureCycle.dark" : "secureCycle.white"} variant={(iconOutline) ? "outline" : "ghost"} _icon={{
+                        "as": iconSet,
+                        "name": iconName,
+                        "color": (iconOutline) ? iconColor : "secureCycle.white",
+                        backgroundColor: (iconOutline) ? "secureCycle.white" : "secureCycle.dark",
+                    }}
+                        onPress={() => null}
+                    />
+                </Column>
+                <Column>
+                    <Center>
+                        <Text>{(iconLabel) ? iconLabel : symptom}</Text>
+                    </Center>
+                </Column>
+            </Column>
+        )
+    })
+
+    const handleShareCycleData = () => {
+        navigation.navigate('Share', { cycleData: cyclData })
+    }
+
+    return (
+        <Column paddingTop={5} paddingLeft={5} paddingRight={2}>
+            <Row space={"md"}>
+                <Column>
+                    <Column >
+                        <Center>
+                            {(cyclData.on_period) ? <IconButton backgroundColor={"secureCycle.dark"} rounded={"full"} borderColor={"secureCycle.white"} variant={"ghost"} _icon={{
+                                "as": SimpleLineIcons,
+                                "name": "drop",
+                                "color": "secureCycle.white",
+                                backgroundColor: "secureCycle.dark",
+                            }}
+                                onPress={() => null}
+                            /> : null}
+                        </Center>
+                    </Column>
+                    <Column>
+                        <Center>
+                            <Text>Flow</Text>
+                        </Center>
+                    </Column>
+                </Column>
+                {symptomsIcons}
+            </Row>
+            <Row space={"md"} marginTop="5" width="100%">
+                <Column width={"100%"} >
+                    <Center>
+                        <Button full backgroundColor="secureCycle.dark" onPress={() => handleShareCycleData()}>Share</Button>
+                    </Center>
+                </Column>
+            </Row>
+        </Column>
+    )
+}
+
+const HistoryScreen = (props) => {
     const cycleData = useSelector(state => state.cycle.cycleDays);
 
     const {
@@ -155,7 +245,7 @@ const HistoryScreen = () => {
         )
     }
 
-    const rednerHistoryView = () => {
+    const rednerHistoryView = (props) => {
         const rendHistoryList = cycleData.map((cycleItem, idx) => {
             return (
                 <Box key={`history_view_item_${idx}`}>
@@ -165,11 +255,9 @@ const HistoryScreen = () => {
                             {(cycleItem.on_period == true) ? <Icon as={SimpleLineIcons} color="secureCycle.pink" size={`lg`} marginLeft={2} marginTop={1} name={"drop"} /> : null}
                         </Row>
                         <Divider marginY={`2`} width={`20%`} />
-                        <Row marginY={`5`}>
-                            <Center>
-                                <Text textAlign={`center`} color="secureCycle.dark">{cycleItem.symptoms}</Text>
-                            </Center>
-                        </Row>
+                        <Column marginY={`5`}>
+                            {renderSymptoms(cycleItem, props.navigation)}
+                        </Column>
                     </Box>
                     <Divider />
                 </Box>
@@ -191,7 +279,7 @@ const HistoryScreen = () => {
                 <Row>
                     <IconButton onPress={() => setShowSanityCheck(!showSanityCheck)} icon={<Icon as={Ionicons} name={(showSanityCheck) ? "bug" : "bug-outline"} />} borderRadius="full" />
                 </Row>
-                {rednerHistoryView()}
+                {rednerHistoryView(props)}
                 {renderSanityCheck(colors)}
             </ScrollView>
         </Box>
@@ -206,7 +294,7 @@ function MonthScreen(props) {
 
     const handleDayPress = (day) => {
         props.navigation.navigate('DAY', {
-            day: day
+            day: (parseISO(day.dateString)).toISOString()
         });
     }
 
@@ -231,13 +319,17 @@ function DayScreen(props) {
         colors
     } = useTheme();
     const day = props.route.params.day
-    const [selectedDay, setSelectedDay] = React.useState(day || new Date().toISOString());
+    const [selectedDay, setSelectedDay] = React.useState(day);
     const cycleData = useSelector(state => state.cycle.cycleDays);
     let selectedCycleData = cycleData.filter(cycleDay => {
         const formattedDate = format(parseISO(cycleDay.date), `yyyy-MM-dd`);
         const selectedDate = format(parseISO(selectedDay), `yyyy-MM-dd`);
         return formattedDate == selectedDate
     });
+
+    useEffect(() => {
+        setSelectedDay(day);
+    }, [props.route.params.day])
 
     // we'll check for this null later
     if (selectedCycleData.length > 0) {
@@ -322,66 +414,7 @@ function DayScreen(props) {
         setSelectedDay(parseISO(day.dateString).toISOString())
     }
 
-    const renderSymptoms = (symptoms) => {
-        const symptomsIcons = symptoms.map((symptom, index) => {
-            let iconName = null;
-            let iconColor = `secureCycle.white`;
-            let iconOutline = true;
-            let iconSet = MaterialCommunityIcons;
-            //these are all the "known" symptoms that we currently support
-            // ['headache', 'nausea', 'bloating', 'cramps']"
-            if (symptom.toLowerCase().includes("headache")) {
-                iconName = "head-question";
-                iconColor = "secureCycle.dark"
-                iconOutline = false;
-            }
-
-            if (symptom.toLowerCase().includes("nausea")) {
-                iconName = "emoticon-sick";
-                iconColor = "secureCycle.dark"
-                iconOutline = false;
-                iconSet = MaterialCommunityIcons;
-            }
-
-            if (symptom.toLowerCase().includes("bloat")) {
-                iconName = "airballoon";
-                iconColor = "secureCycle.dark"
-                iconOutline = false;
-                iconSet = MaterialCommunityIcons;
-            }
-
-            if (symptom.toLowerCase().includes("cramp")) {
-                iconName = "emoticon-cry";
-                iconColor = "secureCycle.dark"
-                iconOutline = false;
-                iconSet = MaterialCommunityIcons;
-            }
-
-            return (
-                <Column>
-                    <Column>
-                        <IconButton backgroundColor={"secureCycle.dark"} rounded={"full"} borderColor={(iconOutline) ? "secureCycle.dark" : "secureCycle.white"} variant={(iconOutline) ? "outline" : "ghost"} _icon={{
-                            "as": iconSet,
-                            "name": iconName,
-                            "color": (iconOutline) ? iconColor : "secureCycle.white",
-                            backgroundColor: (iconOutline) ? "secureCycle.white" : "secureCycle.dark",
-                        }}
-                            onPress={() => null}
-                        />
-                    </Column>
-                    <Text>{symptom}</Text>
-                </Column>
-            )
-        })
-
-        return (
-            <Row space={"md"}>
-                {symptomsIcons}
-            </Row>
-        )
-    }
-
-    const renderCycleData = () => {
+    const renderCycleData = (props) => {
         const renderNoData = () => {
             return (
                 <Column width="100%">
@@ -392,7 +425,7 @@ function DayScreen(props) {
             )
         }
         return (
-            <Box background={"#FFF"} paddingY="5">
+            <Box background={"#FFF"} paddingY="2">
                 <Row>
                     <Column width="20%">
                         <Center>
@@ -423,27 +456,18 @@ function DayScreen(props) {
                         </Center>
                     </Column>
                 </Row>
-                <Row marginY={`2`} space="md">
+                <Center>
+                    <Divider width={`50%`} marginTop={3} />
+                </Center>
+                <Row padding={`2`} space="md">
                     {/* Symptoms */}
 
                     {(!selectedCycleData) ? renderNoData() :
                         (<>
-                            <Column width="20%">
-                                <Center>
-                                    {(selectedCycleData.on_period) ? <IconButton backgroundColor={"secureCycle.dark"} rounded={"full"} borderColor={"secureCycle.white"} variant={"ghost"} _icon={{
-                                        "as": SimpleLineIcons,
-                                        "name": "drop",
-                                        "color": "secureCycle.white",
-                                        backgroundColor: "secureCycle.dark",
-                                    }}
-                                        onPress={() => null}
-                                    /> : null}
-                                </Center>
-                            </Column>
-                            <Column width="60%">
+                            <Column width="100%">
                                 <Center>
                                     <Column>
-                                        {renderSymptoms(selectedCycleData.symptoms)}
+                                        {renderSymptoms(selectedCycleData, props.navigation)}
                                     </Column>
                                 </Center>
                             </Column>
@@ -467,10 +491,11 @@ function DayScreen(props) {
                                 onDayPress={(day) => handleDayPress(day)}
                             />
                             {renderGeneralFertOvPeriodPrediction()}
-                            {renderCycleData()}
+                            <Divider />
+                            {renderCycleData(props)}
                         </Column>
                     </Box>
-                    <Box marginTop={10}>
+                    <Box marginTop={5}>
                         <Column h={`100%`} >
                             {renderPeriodPrediction()}
                         </Column>
@@ -483,7 +508,7 @@ function DayScreen(props) {
 
 
 
-function Home() {
+function Home(props) {
     const {
         colors
     } = useTheme();
@@ -491,6 +516,7 @@ function Home() {
     return (
         <TopTab.Navigator initialRouteName={`DAY`}
             screenOptions={({ route }) => ({
+                animationEnabled: false,
                 tabBarLabel: route.name,
                 tabBarIndicatorStyle: {
                     backgroundColor: colors.secureCycle["dark"],

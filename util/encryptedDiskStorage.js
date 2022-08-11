@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import client from 'react-native-opentdf'
+import Config from 'react-native-config'
 const STORAGE_KEYS = {
     APP_SETTINGS: `APP_SETTINGS`,
     CACHE_DATA: `CACHE_DATA`,
@@ -11,7 +12,7 @@ export async function loadAllDiscData() {
         let retObj = {};
         for (let k in STORAGE_KEYS) {
             let key = STORAGE_KEYS[k];
-            let encryptedStr = AsyncStorage.getItem(key);
+            let encryptedStr = AsyncStorage.getItem(`${Config.CLIENT_ID}_${key}`);
             if (!encryptedStr) {
                 console.log(`Couldn't load key-value:${key} from cache`);
             }
@@ -30,7 +31,7 @@ export async function loadAllDiscData() {
 /** getCachedData */
 export async function getCachedData(key = null) {
    try {
-    let encryptedStr = await AsyncStorage.getItem(STORAGE_KEYS.CACHE_DATA);
+    let encryptedStr = await AsyncStorage.getItem(`${Config.CLIENT_ID}_${STORAGE_KEYS.CACHE_DATA}`);
     if (!encryptedStr) {
         console.log(`Couldn't load key-value:${key} from cache`);
     }
@@ -52,7 +53,7 @@ export async function getCachedData(key = null) {
 export async function storeCacheData(cacheData = {}) {
     try {
         const encryptedStr = await client.encryptText(JSON.stringify(cacheData));
-        return await AsyncStorage.setItem(STORAGE_KEYS.CACHE_DATA, encryptedStr)
+        return await AsyncStorage.setItem(`${Config.CLIENT_ID}_${STORAGE_KEYS.CACHE_DATA}`, encryptedStr)
        } catch(e) {
         console.log(e)
        }
@@ -63,7 +64,7 @@ export async function storeCacheData(cacheData = {}) {
 export async function storeSettings(settings = {}) {
     try {
         const encryptedStr = await client.encryptText(JSON.stringify(settings));
-        return await AsyncStorage.setItem(STORAGE_KEYS.APP_SETTINGS, encryptedStr)
+        return await AsyncStorage.setItem(`${Config.CLIENT_ID}_${STORAGE_KEYS.APP_SETTINGS}`, encryptedStr)
        } catch(e) {
             console.log(e)
        }
@@ -72,7 +73,7 @@ export async function storeSettings(settings = {}) {
 /** clearCache - cleaers all cache data */
 export async function clearCache() {
     try {
-        return await AsyncStorage.removeItem(STORAGE_KEYS.CACHE_DATA);
+        return await AsyncStorage.removeItem(`${Config.CLIENT_ID}_${STORAGE_KEYS.CACHE_DATA}`);
     } catch (error) {
         console.log(error);
     }
@@ -93,4 +94,5 @@ export default {
     storeCacheData,
     storeSettings,
     clearCache,
+    clearAll,
 }

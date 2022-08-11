@@ -4,12 +4,13 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons'
 import AntDesign from 'react-native-vector-icons/AntDesign'
 import Ionicons from 'react-native-vector-icons/Ionicons'
-import { Box, Icon, Text, Factory, View, Column, Row, useTheme, Spinner, Heading, Image, Center } from 'native-base'
+import { Box, Icon, Text, Factory, View, Column, Row, useTheme, Spinner, Input, Button, Heading, Image, Center, useToast, IconButton } from 'native-base'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import SplashScreen from 'react-native-splash-screen'
 import Config from "react-native-config";
 import axios from 'axios'
 import { useSelector, useDispatch } from 'react-redux'
+import { createStackNavigator } from '@react-navigation/stack';
 import { fetchUserCycleData, addCycleItem, addCycleItems } from './store/cycleSlice'
 import { addUserId, removeUserId } from './store/userSlice'
 import encryptedDiskStorage from './util/encryptedDiskStorage'
@@ -20,7 +21,9 @@ import ProfileScreen from './scenes/Profile';
 import ResourcesScreen from './scenes/Resources';
 import TrackingScreen from './scenes/Tracking';
 import secureRequest from './util/secureRequest'
+import Login from './scenes/Login'
 
+const Stack = createStackNavigator();
 
 //create the tab navigator
 const Tab = createBottomTabNavigator();
@@ -78,20 +81,24 @@ function SecureCycle(props) {
         const configureDataAttributesAndPullInitialData = async () => {
             try {
                 const resp = await secureRequest.get(`/uuid?client_id=${Config.CLIENT_ID}`)
-                const uuid = resp.data;
+                let uuid = resp.data;
+                if (uuid) {
+                    uuid = uuid[0];
+                }
                 await dispatch(addUserId(uuid));
                 client.addDataAttribute(`${Config.BASE_DATA_ATTR}/${uuid}`);
                 //attempt to load the cached data first, so we can get the user past the loading screen faster
-                // const cacheData = await encryptedDiskStorage.getCachedData()
-                const cacheData = null
+                const cacheData = await encryptedDiskStorage.getCachedData()
+                // await encryptedDiskStorage.clearAll()
+                // const cacheData = null
                 if (cacheData) {
                     dispatch(addCycleItems(cacheData))
                     setLoadingData(false)
+                } else {
+                    await dispatch(fetchUserCycleData(uuid))
+                    setLoadingData(false)
+                    SplashScreen.hide();
                 }
-                await dispatch(fetchUserCycleData(uuid))
-
-                setLoadingData(false)
-                SplashScreen.hide();
             } catch (error) {
                 console.error(error)
                 debugger;
@@ -109,12 +116,16 @@ function SecureCycle(props) {
 
     if (loadingData == true) {
         return (
-            <Box height={`100%`} width={`100%`} paddingTop={`50%`} backgroundColor={`white`}>
+            <Box height={`100%`} width={`100%`} paddingTop={`30%`} backgroundColor={`white`}>
                 <Center>
-                <Column backgroundColor="white">
-                    <Image resizeMode={`center`} size={`2xl`} alt="Secure Cycle"  source={require(`./design_and_branding/splash-screen-logo-small.png`)} />
-                    <Spinner loading={loadingData} color={`secureCycle.dark`} size="lg" accessibilityLabel="Loading data..." />
-                </Column>
+                    <Column backgroundColor="white">
+                        <Image resizeMode={`center`} size={`2xl`} alt="Secure Cycle" source={require(`./design_and_branding/splash-screen-logo-small.png`)} />
+                        <Center>
+                            <Heading color="secureCycle.dark" marginTop={-75} variant="h6" textAlign={"center"}>Decrypting Your Data</Heading>
+                        </Center>
+                        <Spinner loading={loadingData} color={`secureCycle.dark`} size="lg" accessibilityLabel="Loading data..." />
+                    </Column>
+
                 </Center>
             </Box>
         )
@@ -126,7 +137,7 @@ function SecureCycle(props) {
                 tabBarActiveTintColor: (route.name == "Tracking") ? colors.secureCycle["dark"] : colors.secureCycle["tertiary"],
                 tabBarInactiveTintColor: colors.secureCycle["dark"],
                 tabBarLabel: (route.name == "Tracking") ? "" : route.name,
-
+                animationEnabled: false,
                 header: () => <Box></Box>,
                 tabBarItemStyle: {
                     backgroundColor: colors.secureCycle["white"],
@@ -159,4 +170,82 @@ function SecureCycle(props) {
     );
 }
 
-export default SecureCycle;
+const ShareScreen = (props) => {
+    const toast = useToast();
+    const shareInputRef = React.useRef(null);
+    const userId = useSelector((state) => state.user.userId)
+
+    const [shareClientId, setShareClientId] = React.useState(null)
+    const handleLoginSubmit = async (text) => {
+        try {
+
+
+            shareInputRef.current.blur()
+
+            const shareResp = await secureRequest.get(`/share?client_id=${shareClientId}&uuid=${userId}`, {})
+            debugger;
+            const result = shareResp.data;
+            debugger;
+            toast.show({
+                description: `Successfully shared cycle data to ${shareClientId}`
+            })
+        } catch (error) {
+            console.log(error)
+            toast.show({
+                description: `Error sharing cycle data to ${shareClientId}`,
+            })
+        }
+    }
+
+    const handleClientIdTextChange = (text) => {
+        setShareClientId(text.toLowerCase())
+    }
+
+    return (
+        <Box height={`100%`} width={`100%`} paddingTop={`5%`} rounded="md" backgroundColor={"secureCycle.muted:alpha.75"}>
+            <Row>
+
+                <Center>
+                    <Column w="90%" space={5} maxW="400" height={`75%`} padding={5} backgroundColor="secureCycle.white" space={6} rounded="md" alignItems="center" _dark={{
+                        borderColor: "secureCycle.500"
+                    }} _light={{
+                        borderColor: "coolGray.200"
+                    }}>
+                        <Heading variant={"h4"} color="secureCycle.dark" textAlign={"center"}>You're about to share sensitive data.</Heading>
+                        <Heading variant={"h4"} color="secureCycle.dark" textAlign={"center"} marginY={2}>Please enter the clientId of the person you'd like to share with below</Heading>
+                        <Input ref={shareInputRef} onChangeText={handleClientIdTextChange} borderColor={"secureCycle.dark"} _focus={{ color: "secureCycle.dark" }} placeholderTextColor="secureCycle.dark" size="xl" color="secureCycle.dark" placeholder="Client Id to Share With" w="90%" />
+                        <Row space={10} marginTop={25}>
+                            <Button rounded="full" onPress={handleLoginSubmit} backgroundColor="secureCycle.dark" size="lg" color="secureCycle.dark">Share</Button>
+                            <Button rounded="full" onPress={() => props.navigation.navigate("Home")} backgroundColor="secureCycle.dark" size="lg" color="secureCycle.dark">Close</Button>
+                        </Row>
+                    </Column>
+                </Center>
+            </Row>
+        </Box>
+    );
+}
+
+
+const SecureCycleAuthStack = (props) => {
+
+    return (
+        <Stack.Navigator gestureEnabled={false} screenOptions={{
+            headerShown: false,
+            animationEnabled: false,
+        }}
+            headerShown={false}
+            cardStyle={{
+                padding: 0, margin: 0,
+            }}
+            initialRouteName="Logout">
+            <Stack.Screen name="Logout" component={Login} />
+            <Stack.Screen name="SecureCycle" component={SecureCycle} />
+            <Stack.Screen name="Share" options={{
+                presentation: 'transparentModal',
+                animationEnabled: false,
+            }} component={ShareScreen} />
+        </Stack.Navigator >
+    )
+}
+
+export default SecureCycleAuthStack

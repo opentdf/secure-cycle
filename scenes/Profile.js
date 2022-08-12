@@ -5,7 +5,7 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import SimpleLineIcons from 'react-native-vector-icons/SimpleLineIcons'
 
 import Ionicons from 'react-native-vector-icons/Ionicons'
-import { Box, Button, Icon, Text, Factory, useToast, View, IconButton, Column, Row, useTheme, Center, Heading, Space, Skeleton, VStack, HStack, ScrollView, Divider, } from 'native-base'
+import { Box, Button, Icon, Text, Factory, useToast, View, Spinner, IconButton, Column, Row, useTheme, Center, Heading, Space, Skeleton, VStack, HStack, ScrollView, Divider, } from 'native-base'
 import { useSelector, useDispatch } from 'react-redux'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import encryptedDiskStorage from './../util/encryptedDiskStorage'
@@ -25,7 +25,9 @@ Profile.propTypes = {
 function Profile(props) {
     const dispatch = useDispatch()
     const [encryptedSharedData, setEncryptedSharedData] = React.useState(null)
+    const [loading, setLoading] = React.useState(false)
     const userId = useSelector((state) => state.user.userId)
+
     const toast = useToast()
     const getRawCache = async () => {
         const encryptedCacheDataStr = await encryptedDiskStorage.getRawCachedData()
@@ -34,13 +36,25 @@ function Profile(props) {
     }
 
     const handleShareDataDecrypt = async (item, index) => {
-        const sharedData = encryptedSharedData[index]
-        //NOTE: the "sharedData" is an array of [0] = username, [1] = encryptedData. Thus we hard index into the array at 1
-        const decryptedSharedDataStr = await client.decryptText(sharedData[1])
-        const decryptedSharedData = JSON.parse(decryptedSharedDataStr)
-        //NOTE: we're intentionally setting the string version of our decrypted data instead of the object version since we're just displaying it as text
-        encryptedSharedData[index] = [sharedData[0], { decrypted: true, decryptedSharedData, decryptedSharedDataStr }];
-        setEncryptedSharedData(_.cloneDeep(encryptedSharedData))
+        try {
+
+            const sharedData = encryptedSharedData[index]
+            setLoading(true)
+            //NOTE: the "sharedData" is an array of [0] = username, [1] = encryptedData. Thus we hard index into the array at 1
+            const decryptedSharedDataStr = await client.decryptText(sharedData[1])
+            const decryptedSharedData = JSON.parse(decryptedSharedDataStr)
+            //NOTE: we're intentionally setting the string version of our decrypted data instead of the object version since we're just displaying it as text
+            encryptedSharedData[index] = [sharedData[0], { decrypted: true, decryptedSharedData, decryptedSharedDataStr }];
+            setEncryptedSharedData(_.cloneDeep(encryptedSharedData))
+            setLoading(false)
+        } catch (error) {
+            setLoading(false)
+            console.log(error)
+            toast.show({
+                description: `You do not have access to decrypt this file.`,
+                duration: 3000
+            })
+        }
     }
 
     const handleShareRevoke = async (item, index) => {
@@ -81,7 +95,7 @@ function Profile(props) {
         }
 
         const fancyShareDataRender = (shareData) => {
-            const rendSharedDataArr = shareData.decryptedSharedData.map((cycleData) => {
+            const rendSharedDataArr = shareData.decryptedSharedData.map((cycleData, cycIndex) => {
 
                 const symptoms = cycleData.symptoms;
                 debugger;
@@ -142,38 +156,60 @@ function Profile(props) {
                 })
 
                 return (
-                    <>
-                    <Column paddingTop={5} paddingLeft={5} paddingRight={2}>
-                        <Text marginY={2} bold>{format(parseISO(cycleData.date), `MMM`)} {format(parseISO(cycleData.date), `dd`)}</Text>
-                        <Row space={"md"}>
-                            <Column>
-                                <Column >
-                                    <Center>
-                                        {(cycleData.on_period) ? <IconButton backgroundColor={"secureCycle.dark"} rounded={"full"} borderColor={"secureCycle.white"} variant={"ghost"} _icon={{
-                                            "as": SimpleLineIcons,
-                                            "name": "drop",
-                                            "color": "secureCycle.white",
-                                            backgroundColor: "secureCycle.dark",
-                                        }}
-                                            onPress={() => null}
-                                        /> : null}
-                                    </Center>
-                                </Column>
+                    <Box key={`decrypted_shared_data${cycIndex}`}>
+                        <Column paddingTop={5} paddingLeft={5} paddingRight={2}>
+                            <Text marginY={2} bold>{format(parseISO(cycleData.date), `MMM`)} {format(parseISO(cycleData.date), `dd`)}</Text>
+                            <Row space={"md"}>
                                 <Column>
-                                    <Center>
-                                        <Text>Flow</Text>
-                                    </Center>
+                                    <Column >
+                                        <Center>
+                                            {(cycleData.on_period) ? <IconButton backgroundColor={"secureCycle.dark"} rounded={"full"} borderColor={"secureCycle.white"} variant={"ghost"} _icon={{
+                                                "as": SimpleLineIcons,
+                                                "name": "drop",
+                                                "color": "secureCycle.white",
+                                                backgroundColor: "secureCycle.dark",
+                                            }}
+                                                onPress={() => null}
+                                            /> : null}
+                                        </Center>
+                                    </Column>
+                                    <Column>
+                                        <Center>
+                                            <Text>Flow</Text>
+                                        </Center>
+                                    </Column>
                                 </Column>
-                            </Column>
-                            {symptomsIcons}
-                        </Row>
-                    </Column>
-                    <Divider />
-                    </>
+                                {symptomsIcons}
+                            </Row>
+                        </Column>
+                        <Divider />
+                    </Box>
                 )
             })
 
             return rendSharedDataArr;
+        }
+
+        const renderButtonsOrLoading = (item, index) => {
+            if (loading) {
+                return (
+                    <Column paddingTop={25} width={`100%`}>
+                        <Center>
+                            <Spinner size="lg" />
+                        </Center>
+                    </Column>
+                )
+            }
+            return (
+                <>
+                    <Column>
+                        <Button marginTop={5} onPress={() => handleShareDataDecrypt(item, index)} backgroundColor={"secureCycle.dark"}><Text color="secureCycle.white">Decrypt</Text></Button>
+                    </Column>
+                    <Column>
+                        <Button marginTop={5} onPress={() => handleShareRevoke(item, index)} backgroundColor={"secureCycle.dark"}><Text color="secureCycle.white">Revoke</Text></Button>
+                    </Column>
+                </>
+            )
         }
 
 
@@ -186,12 +222,7 @@ function Profile(props) {
                             <Text marginY={1}>Data:</Text>{(item[1].decrypted) ? fancyShareDataRender(item[1]) : (<Text bold>{item[1]}</Text>)}
                         </ScrollView>
                         <Row space={5}>
-                            <Column>
-                                <Button marginTop={5} onPress={() => handleShareDataDecrypt(item, index)} backgroundColor={"secureCycle.dark"}><Text color="secureCycle.white">Decrypt</Text></Button>
-                            </Column>
-                            <Column>
-                                <Button marginTop={5} onPress={() => handleShareRevoke(item, index)} backgroundColor={"secureCycle.dark"}><Text color="secureCycle.white">Revoke</Text></Button>
-                            </Column>
+                            {renderButtonsOrLoading(item, index)}
                         </Row>
                         <Divider />
                     </Box>

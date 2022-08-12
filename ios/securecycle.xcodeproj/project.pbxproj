@@ -672,6 +672,7 @@
 					"\"../node_modules/react-native-opentdf/lib\"",
 					"\"${PODS_CONFIGURATION_BUILD_DIR}/react-native-opentdf/lib\"/**",
 				);
+				ONLY_ACTIVE_ARCH = YES;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",

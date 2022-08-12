@@ -224,7 +224,7 @@ PODS:
     - react-native-config/App (= 1.4.6)
   - react-native-config/App (1.4.6):
     - React-Core
-  - react-native-opentdf (0.1.0):
+  - react-native-opentdf (0.1.1):
     - React-Core
   - react-native-pager-view (5.4.25):
     - React-Core
@@ -472,7 +472,7 @@ SPEC CHECKSUMS:
   React-jsinspector: c5989c77cb89ae6a69561095a61cce56a44ae8e8
   React-logger: a0833912d93b36b791b7a521672d8ee89107aff1
   react-native-config: 7cd105e71d903104e8919261480858940a6b9c0e
-  react-native-opentdf: 81e6da9752981b5e3af22b1161d76a362eb18499
+  react-native-opentdf: 655d98291b11998a53de554e4292972779756823
   react-native-pager-view: da490aa1f902c9a5aeecf0909cc975ad0e92e53e
   react-native-safe-area-context: 6c12e3859b6f27b25de4fee8201cfb858432d8de
   react-native-splash-screen: 4312f786b13a81b5169ef346d76d33bc0c6dc457

@@ -72,6 +72,8 @@ const SymptomList = (props) => {
 function Tracking({ navigation }) {
     const { colors } = useTheme();
     const dispatch = useDispatch();
+    const clientId = useSelector((state) => state.user.clientId)
+
     const toast = useToast();
     const [date, setDate] = React.useState(new Date());
     const [symptoms, setSymptoms] = React.useState(``);
@@ -112,7 +114,7 @@ function Tracking({ navigation }) {
             //lets proactively add this data to our store
             dispatch(addCycleItem(payload));
             //now lets get our uuid (user id)
-            const uuidResp = await secureRequest.get(`/uuid?client_id=${Config.CLIENT_ID}`)
+            const uuidResp = await secureRequest.get(`/uuid?client_id=${clientId}`)
             let  uuid = uuidResp.data;
             if(uuid) {
                 uuid = uuid[0];

@@ -16,7 +16,7 @@ export const userSlice = createSlice({
             // doesn't actually mutate the state because it uses the Immer library,
             // which detects changes to a "draft state" and produces a brand new
             // immutable state based off those changes
-            state.clientId = clientSecret;
+            state.clientId = clientSecret.payload;
         },
         removeClientSecret: (state) => {
             // Redux Toolkit allows us to write "mutating" logic in reducers. It
@@ -30,7 +30,7 @@ export const userSlice = createSlice({
             // doesn't actually mutate the state because it uses the Immer library,
             // which detects changes to a "draft state" and produces a brand new
             // immutable state based off those changes
-            state.clientId = clientId;
+            state.clientId = clientId.payload;
         },
         removeClientId: (state) => {
             // Redux Toolkit allows us to write "mutating" logic in reducers. It
@@ -44,7 +44,7 @@ export const userSlice = createSlice({
             // doesn't actually mutate the state because it uses the Immer library,
             // which detects changes to a "draft state" and produces a brand new
             // immutable state based off those changes
-            state.userId = userId;
+            state.userId = userId.payload;
         },
         removeUserId: (state, userDays) => {
             // Redux Toolkit allows us to write "mutating" logic in reducers. It

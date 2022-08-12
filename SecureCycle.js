@@ -46,7 +46,7 @@ const renderTabIcon = (focused, color, size, route, themeColors) => {
         iconName = 'ios-stats-chart-outline';
         return <Icon as={AntDesign} size="5xl" name={`pluscircle`} color={color} {...styleProps} />;
 
-    } else if (route.name === 'Profile') {
+    } else if (route.name === 'Share') {
         iconName = 'person-circle-outline';
     }
     else if (route.name === 'Resources') {
@@ -65,37 +65,72 @@ const renderTabIcon = (focused, color, size, route, themeColors) => {
 
 function SecureCycle(props) {
     const dispatch = useDispatch();
+    const toast = useToast();
     const userId = useSelector((state) => state.user.userId)
+    const clientId = useSelector((state) => state.user.clientId)
     const cycleData = useSelector((state) => state.cycle.cycleDays)
+    const useCache = useSelector((state) => state.cycle.useCache)
     const [loadingData, setLoadingData] = React.useState(true)
     useEffect(() => {
         //lets give everyone a chance to see our pretty splash screen
         setLoadingData(true)
         //init our client
-        client.setOIDCEndpoint(Config.OIDC_ENDPOINT);
-        client.setKASEndpoint(Config.KAS_ENDPOINT);
-        client.setClientId(Config.CLIENT_ID);
-        client.setClientSecret(Config.CLIENT_SECRET);
+
+
         //make sure to set our default DataAttribute for the user, so that we can start encrypting!
         //first we'll fetch the needed uuid
         const configureDataAttributesAndPullInitialData = async () => {
             try {
-                const resp = await secureRequest.get(`/uuid?client_id=${Config.CLIENT_ID}`)
+                await client.setOIDCEndpoint(Config.OIDC_ENDPOINT);
+                await client.setKASEndpoint(Config.KAS_ENDPOINT);
+                await client.setClientId(clientId);
+                await client.setClientSecret(Config.CLIENT_SECRET);
+                //it's important to call this function AFTER you've set all the configuration (endpoints, client id, etc)
+                //in this future this will just be one init function that accepts all arguments
+                await client.initClient();
+
+                const resp = await secureRequest.get(`/uuid?client_id=${clientId}`)
                 let uuid = resp.data;
                 if (uuid) {
                     uuid = uuid[0];
                 }
                 await dispatch(addUserId(uuid));
-                client.addDataAttribute(`${Config.BASE_DATA_ATTR}/${uuid}`);
+                const dataAttribute = `${Config.BASE_DATA_ATTR}/${uuid}`;
+                const currentAttributes = await client.readDataAttributes();
+                console.log(currentAttributes)
+                if (currentAttributes != dataAttribute) {
+                await client.addDataAttribute(`${dataAttribute}`);
+                }
                 //attempt to load the cached data first, so we can get the user past the loading screen faster
-                const cacheData = await encryptedDiskStorage.getCachedData()
                 // await encryptedDiskStorage.clearAll()
                 // const cacheData = null
-                if (cacheData) {
-                    dispatch(addCycleItems(cacheData))
-                    setLoadingData(false)
+                if (useCache) {
+                    const cacheData = await encryptedDiskStorage.getCachedData(null, clientId)
+                    if (cacheData) {
+                        toast.show({
+                            description: "Using cached Data.",
+                        })
+                        dispatch(addCycleItems(cacheData))
+                        setLoadingData(false)
+                    } else {
+                        //this is messy. Let's DRY this up soon.
+                        toast.show({
+                            description: "No cache found. Fetching fresh data.",
+                        })
+                        //clear our cache and pull the data from the server
+                        // await encryptedDiskStorage.clearCache(clientId)
+                        await dispatch(fetchUserCycleData({ userId: uuid, clientId }))
+                        setLoadingData(false)
+                        SplashScreen.hide();
+                    }
+                    //this is messy. Let's DRY this up soon.
                 } else {
-                    await dispatch(fetchUserCycleData(uuid))
+                    toast.show({
+                        description: "No cache found. Fetching fresh data.",
+                    })
+                    //clear our cache and pull the data from the server
+                    // await encryptedDiskStorage.clearCache(clientId)
+                    await dispatch(fetchUserCycleData({ userId: uuid, clientId }))
                     setLoadingData(false)
                     SplashScreen.hide();
                 }
@@ -104,7 +139,6 @@ function SecureCycle(props) {
                 debugger;
             }
         }
-
 
 
         configureDataAttributesAndPullInitialData();
@@ -163,7 +197,7 @@ function SecureCycle(props) {
                 <Tab.Screen name="Home" component={HomeScreen} />
                 <Tab.Screen name="Analytics" component={AnalyticsScreen} />
                 <Tab.Screen name="Tracking" component={TrackingScreen} />
-                <Tab.Screen name="Profile" component={ProfileScreen} />
+                <Tab.Screen name="Share" component={ProfileScreen} />
                 <Tab.Screen name="Resources" component={ResourcesScreen} />
             </Tab.Navigator>
         </Box>
@@ -182,18 +216,22 @@ const ShareScreen = (props) => {
 
             shareInputRef.current.blur()
 
-            const shareResp = await secureRequest.get(`/share?client_id=${shareClientId}&uuid=${userId}`, {})
-            debugger;
+            // const shareResp = await secureRequest.get(`/share?client_id=${shareClientId}&uuid=${userId}`, {})
+            const shareResp = await secureRequest.post(`/share?client_id=${shareClientId}&uuid=${userId}`, { uuid: userId, client_id: shareClientId })
             const result = shareResp.data;
-            debugger;
             toast.show({
                 description: `Successfully shared cycle data to ${shareClientId}`
             })
+
+            //now lets take the user back to the view they opened the share screen from
+            props.navigation.goBack();
         } catch (error) {
             console.log(error)
             toast.show({
                 description: `Error sharing cycle data to ${shareClientId}`,
             })
+            //now lets take the user back to the view they opened the share screen from
+            props.navigation.goBack();
         }
     }
 
@@ -240,7 +278,7 @@ const SecureCycleAuthStack = (props) => {
             initialRouteName="Logout">
             <Stack.Screen name="Logout" component={Login} />
             <Stack.Screen name="SecureCycle" component={SecureCycle} />
-            <Stack.Screen name="Share" options={{
+            <Stack.Screen name="ShareModal" options={{
                 presentation: 'transparentModal',
                 animationEnabled: false,
             }} component={ShareScreen} />

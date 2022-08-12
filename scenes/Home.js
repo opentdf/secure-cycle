@@ -10,10 +10,12 @@ import Octicons from 'react-native-vector-icons/Octicons'
 import Ionicons from 'react-native-vector-icons/Ionicons'
 import SimpleLineIcons from 'react-native-vector-icons/SimpleLineIcons'
 import { useSelector, useDispatch } from 'react-redux';
-import { Box, Icon, Text, Factory, View, Column, Row, useTheme, Center, Divider, Flex, Heading, Input, Button, IconButton, Card, CardItem, ScrollView, Image, } from 'native-base'
+import { Box, Icon, Text, Factory, View, Column, Row, useTheme, Center, Divider, useToast, Flex, Heading, Input, Button, IconButton, Card, CardItem, ScrollView, Image, } from 'native-base'
 import { CalendarProvider, WeekCalendar, Calendar, CalendarList } from "react-native-calendars";
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { NavigationContainer } from '@react-navigation/native';
+import encryptedDiskStorage from '../util/encryptedDiskStorage';
+import { updateCacheToggle } from './../store/cycleSlice';
 import _ from 'lodash'
 import client from 'react-native-opentdf';
 import { parseISO, addDays, subDays, parse, format } from 'date-fns';
@@ -126,7 +128,7 @@ const renderSymptoms = (cyclData, navigation) => {
     })
 
     const handleShareCycleData = () => {
-        navigation.navigate('Share', { cycleData: cyclData })
+        navigation.navigate('ShareModal', { cycleData: cyclData })
     }
 
     return (
@@ -165,17 +167,26 @@ const renderSymptoms = (cyclData, navigation) => {
 }
 
 const HistoryScreen = (props) => {
-    const cycleData = useSelector(state => state.cycle.cycleDays);
 
     const {
         colors
     } = useTheme();
+    const toast = useToast();
+    const cycleData = useSelector(state => state.cycle.cycleDays);
+    const useCache = useSelector(state => state.cycle.useCache);
+    const [cacheToggle, setCacheToggle] = React.useState(false)
     const [textToEncrypt, setTextToEncrypt] = React.useState('')
     const [encryptedText, setEncryptedText] = React.useState('')
     const [decryptedText, setDecryptedText] = React.useState('')
     const [showSanityCheck, setShowSanityCheck] = React.useState(false)
     const encryptTextRef = React.useRef()
+    const dispatch = useDispatch();
     const handleChange = text => setTextToEncrypt(text);
+
+    useEffect(() => {
+        setCacheToggle(useCache)
+    }, [useCache])
+
     const handleEncrypt = () => {
         if (textToEncrypt == null || textToEncrypt.length <= 0) {
             alert(`Please enter text to encrypt, before pressing encrypt`);
@@ -204,6 +215,32 @@ const HistoryScreen = (props) => {
             console.log(error)
         })
     }
+
+    const handleToggleUseCache = () => {
+        //NOTE: we're "notting" the cacheToggle value here, becuase the "setCacheToggle" function is async, thus we shouldn't use the updated value from it yet
+
+        if (!cacheToggle == true) {
+            toast.show({
+                description: "Cache is now enabled",
+            })
+        } else {
+            toast.show({
+                description: "Cache is now disabled",
+            })
+        }
+        setCacheToggle(!cacheToggle)
+        dispatch(updateCacheToggle(!cacheToggle))
+    }
+
+    const handleCacheDelete = async () => {
+
+        await encryptedDiskStorage.clearAll()
+        toast.show({
+            description: "Cache has been deleted",
+        })
+    }
+
+
 
     const renderSanityCheck = () => {
 
@@ -251,7 +288,7 @@ const HistoryScreen = (props) => {
                 <Box key={`history_view_item_${idx}`}>
                     <Box paddingLeft={15} paddingRight={15} paddingTop={15}>
                         <Row>
-                            <Heading>{format(parseISO(cycleItem.date), `MMM`)} {format(parseISO(cycleItem.date), `dd`)}</Heading>
+                            <Heading color="secureCycle.tertiary">{format(parseISO(cycleItem.date), `MMM`)} {format(parseISO(cycleItem.date), `dd`)}</Heading>
                             {(cycleItem.on_period == true) ? <Icon as={SimpleLineIcons} color="secureCycle.pink" size={`lg`} marginLeft={2} marginTop={1} name={"drop"} /> : null}
                         </Row>
                         <Divider marginY={`2`} width={`20%`} />
@@ -276,9 +313,27 @@ const HistoryScreen = (props) => {
     return (
         <Box width={`100%`} height={`100%`} backgroundColor="white">
             <ScrollView>
-                <Row>
-                    <IconButton onPress={() => setShowSanityCheck(!showSanityCheck)} icon={<Icon as={Ionicons} name={(showSanityCheck) ? "bug" : "bug-outline"} />} borderRadius="full" />
-                </Row>
+                <Box borderBottomColor={"grey"} bottomBorderWidth="1">
+                    <Row space={5} paddingLeft={4}>
+
+                        <Column width="5%">
+                            <IconButton onPress={() => setShowSanityCheck(!showSanityCheck)} color="secureCycle.tertiary" icon={<Icon as={Ionicons} color="secureCycle.tertiary" name={(showSanityCheck) ? "bug" : "bug-outline"} />} borderRadius="full" />
+                        </Column>
+                        <Column width="5%">
+                            <IconButton onPress={() => handleToggleUseCache()} color={"secureCycle.tertiary"} icon={<Icon as={MaterialCommunityIcons} color="secureCycle.tertiary" name={(cacheToggle) ? "harddisk" : "harddisk-remove"} />} borderRadius="full" />
+                        </Column>
+                        <Column width="5%">
+                            <IconButton onPress={() => handleCacheDelete()} color={"secureCycle.tertiary"} icon={<Icon as={MaterialCommunityIcons} color="secureCycle.tertiary" name={"delete"} />} borderRadius="full" />
+                        </Column>
+                        <Column width={"65%"}>
+                            <Center>
+                                <Box marginTop="2.5">
+                                    <Heading color="secureCycle.tertiary" size={"sm"} variant={"H6"}>You have {cycleData.length} records to view</Heading>
+                                </Box>
+                            </Center>
+                        </Column>
+                    </Row>
+                </Box>
                 {rednerHistoryView(props)}
                 {renderSanityCheck(colors)}
             </ScrollView>
@@ -419,7 +474,7 @@ function DayScreen(props) {
             return (
                 <Column width="100%">
                     <Center>
-                        <Heading size="xs" color="secureCycle.dark">No Cycle Data Found</Heading>
+                        <Heading size="xs" color="secureCycle.tertiary">No Cycle Data Found</Heading>
                     </Center>
                 </Column>
             )

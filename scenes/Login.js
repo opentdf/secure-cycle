@@ -19,8 +19,11 @@ function Login(props) {
     const [clientId, setClientId] = React.useState(null)
     const handleLoginSubmit = (text) => {
         clientIdInputRef.current.blur()
+        //lets clear our text input
+        setClientId(null)
+        clientIdInputRef.current.clear();
 
-        dispatch(addClientSecret())
+        dispatch(addClientId(clientId))
     }
 
     const handleClientIdTextChange = (text) => {

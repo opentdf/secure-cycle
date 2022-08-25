@@ -63,6 +63,7 @@ export const cycleSlice = createSlice({
             // which detects changes to a "draft state" and produces a brand new
             // immutable state based off those changes
             state.cycleDays.push(cycleDay.payload);
+            state.cycleDays = _.sortBy(state.cycleDays, (u) => u.date)
         },
         addCycleItems: (state, cycleDays) => {
             // Redux Toolkit allows us to write "mutating" logic in reducers. It
@@ -70,6 +71,8 @@ export const cycleSlice = createSlice({
             // which detects changes to a "draft state" and produces a brand new
             // immutable state based off those changes
             state.cycleDays = state.cycleDays.concat(cycleDays.payload);
+            //lets sort our data after concat
+            state.cycleDays = _.sortBy(state.cycleDays, (u) => u.date)
         },
         removeCycleItem: (state, index) => {
             state.cycleDays.splice(index.payload, 1);
@@ -87,6 +90,7 @@ export const cycleSlice = createSlice({
                 // state.cycleDays = state.cycleDays.concat(action.payload)
                 //we seem to be duplicate records on multiple pulls
                 state.cycleDays = _.merge(state.cycleDays, action.payload)
+                state.cycleDays = _.sortBy(state.cycleDays, (u) => u.date)
             } else {
                 console.log(`failed to retrieve cycle data`)
             }

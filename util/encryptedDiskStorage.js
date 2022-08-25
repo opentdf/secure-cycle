@@ -26,7 +26,6 @@ export async function decryptObjectValues(data) {
         if(key == "symptoms"){
             value = JSON.parse(value)
         }
-        debugger;
         data[key] = value
     }
     return data
@@ -102,7 +101,6 @@ export async function storeCacheData(cacheData = {}, clientId) {
         return true;
     } catch (e) {
         console.log(e)
-        debugger;
         return false;
     }
 }

@@ -98,7 +98,6 @@ function Profile(props) {
             const rendSharedDataArr = shareData.decryptedSharedData.map((cycleData, cycIndex) => {
 
                 const symptoms = cycleData.symptoms;
-                debugger;
                 const symptomsIcons = symptoms.map((symptom, index) => {
                     let iconName = null;
                     let iconColor = `secureCycle.white`;

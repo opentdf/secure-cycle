@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import {
     ImageBackground
 } from 'react-native'
@@ -369,6 +369,10 @@ function MonthScreen(props) {
     );
 }
 
+//this is hardcoded, we should fix this later.
+// const calculatedPeriodStartEstimate = calculatePeriodEstimate();
+const calculatedPeriodStartEstimate = 6;
+
 function DayScreen(props) {
     const {
         colors
@@ -394,8 +398,7 @@ function DayScreen(props) {
     }
 
     const renderPeriodPrediction = () => {
-        //this is hardcoded, we should fix this later.
-        const calculatedPeriodStartEstimate = calculatePeriodEstimate();
+
         return (
             <Center>
                 <Box borderRadius={`full`} >
@@ -540,9 +543,9 @@ function DayScreen(props) {
                     <Box backgroundColor="secureCycle.white" alignContent="center">
                         <Column>
                             <WeekCalendar markedDates={formatCycleData(cycleData)}
-                                date={_.cloneDeep(selectedDay)}
+                                date={selectedDay}
                                 firstDay={1}
-                                initialDate={_.cloneDeep(selectedDay)}
+                                initialDate={selectedDay}
                                 onDayPress={(day) => handleDayPress(day)}
                             />
                             {renderGeneralFertOvPeriodPrediction()}

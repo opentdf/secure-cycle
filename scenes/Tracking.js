@@ -45,16 +45,16 @@ const STATIC_SYMPTOMS = [
 ]
 
 const SymptomList = (props) => {
-    const renderFlowButtons = STATIC_SYMPTOMS.filter((symptom) =>  symptom.type == `flow`).map((symptom) => {
+    const renderFlowButtons = STATIC_SYMPTOMS.filter((symptom) => symptom.type == `flow`).map((symptom) => {
         return (
-            
+
             <IconButton rounded="full" borderColor="secureCycle.dark" key={`${symptom.name}_outline_${symptom.type}`} variant={`outline`} _icon={{
                 as: symptom.iconFont,
                 name: symptom.iconName,
                 color: `secureCycle.dark`,
                 backgroundColor: `secureCycle.`,
-              }} onPress={() => props.onPress(symptom.name)}
-              >
+            }} onPress={() => props.onPress(symptom.name)}
+            >
             </IconButton>
         )
     })
@@ -63,7 +63,7 @@ const SymptomList = (props) => {
     return (
         <Box>
             <Row>
-            {renderFlowButtons}
+                {renderFlowButtons}
             </Row>
         </Box>
     )
@@ -94,7 +94,6 @@ function Tracking({ navigation }) {
                 symptoms: [symptoms],
             }
             let encryptedPayload = {};
-
             //loop through and encrypt each value
             const keys = Object.keys(payload);
 
@@ -105,23 +104,28 @@ function Tracking({ navigation }) {
                     alert(`${key} is a required value. Please try again.`)
                     return;
                 }
-                //ensure we're only encrypting strings
-                value = value.toString()
+
+                if (key === `symptoms`) {
+                    //ensure we're only encrypting strings
+                    value = JSON.stringify(value)
+                } else {
+                    //ensure we're only encrypting strings
+                    value = value.toString()
+                }
                 //and now lets encrypt
                 encryptedPayload[key] = await client.encryptText(value);
             }
-
             //lets proactively add this data to our store
             dispatch(addCycleItem(payload));
             //now lets get our uuid (user id)
             const uuidResp = await secureRequest.get(`/uuid?client_id=${clientId}`)
-            let  uuid = uuidResp.data;
-            if(uuid) {
+            let uuid = uuidResp.data;
+            if (uuid) {
                 uuid = uuid[0];
             }
             //okay we're good to go. Lets send our data
             const resp = await secureRequest.post(`/date?uuid=${uuid}`, encryptedPayload)
-            
+
             setSymptoms(``)
             setDate(new Date())
             setOnPeriod(true)
@@ -142,7 +146,6 @@ function Tracking({ navigation }) {
                 setLoading(false);
             }, 1500)
         } catch (error) {
-            debugger;
             console.error(error)
         }
     }

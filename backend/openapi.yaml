@@ -1,0 +1,339 @@
+openapi: 3.0.2
+info:
+  title: FastAPI
+  version: 0.1.0
+servers:
+  - url: /secure-cycle-backend
+paths:
+  /uuid:
+    get:
+      summary: Get Uuid
+      operationId: get_uuid_uuid_get
+      parameters:
+        - required: true
+          schema:
+            title: Client Id
+            type: string
+          name: client_id
+          in: query
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+            data:
+              example: abcd-1234-abcd-1234
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /getdate:
+    post:
+      summary: Post Get Dates
+      operationId: post_get_dates_getdate_post
+      parameters:
+        - required: true
+          schema:
+            title: Uuid
+            type: string
+          name: uuid
+          in: query
+      requestBody:
+        content:
+          application/json:
+            schema:
+              title: Ids
+              type: array
+              items:
+                type: integer
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+              example:
+                - id: 10
+                  uuid: '1234'
+                  date: encryptedString
+                  on_period: encryptedString
+                  symptoms: encrypte_string
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /date:
+    get:
+      summary: Get Dates
+      operationId: get_dates_date_get
+      parameters:
+        - required: true
+          schema:
+            title: Uuid
+            type: string
+          name: uuid
+          in: query
+      requestBody:
+        content:
+          application/json:
+            schema:
+              title: Ids
+              type: array
+              items:
+                type: integer
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+              example:
+                - id: 10
+                  uuid: '1234'
+                  date: encryptedString
+                  on_period: encryptedString
+                  symptoms: encrypte_string
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    put:
+      summary: Put Dates
+      operationId: put_dates_date_put
+      parameters:
+        - required: true
+          schema:
+            title: Uuid
+            type: string
+          name: uuid
+          in: query
+        - required: true
+          schema:
+            title: Rid
+            type: integer
+          name: rid
+          in: query
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Day'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+              example:
+                id: 10
+                uuid: '1234'
+                date: encryptedString
+                on_period: encryptedString
+                symptoms: encrypte_string
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      summary: Post Dates
+      operationId: post_dates_date_post
+      parameters:
+        - required: true
+          schema:
+            title: Uuid
+            type: string
+          name: uuid
+          in: query
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Day'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+              example:
+                id: 10
+                uuid: '1234'
+                date: encryptedString
+                on_period: encryptedString
+                symptoms: encrypte_string
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /reset:
+    post:
+      summary: Post Reset
+      operationId: post_reset_reset_post
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /share:
+    get:
+      summary: Get Shared
+      operationId: get_shared_share_get
+      parameters:
+        - required: true
+          schema:
+            title: Client Id
+            type: string
+          name: client_id
+          in: query
+        - required: true
+          schema:
+            title: Uuid
+            type: string
+          name: uuid
+          in: query
+      requestBody:
+        content:
+          application/json:
+            schema:
+              title: Ids
+              type: array
+              items:
+                type: integer
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+              example:
+                - id: 10
+                  uuid: '1234'
+                  date: encryptedString
+                  on_period: encryptedString
+                  symptoms: encrypte_string
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      summary: Share With
+      operationId: share_with_share_post
+      parameters:
+        - required: true
+          schema:
+            title: Client Id
+            type: string
+          name: client_id
+          in: query
+        - required: true
+          schema:
+            title: Uuid
+            type: string
+          name: uuid
+          in: query
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /revoke:
+    post:
+      summary: Revoke
+      operationId: revoke_revoke_post
+      parameters:
+        - required: true
+          schema:
+            title: Client Id
+            type: string
+          name: client_id
+          in: query
+        - required: true
+          schema:
+            title: Uuid
+            type: string
+          name: uuid
+          in: query
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    Day:
+      title: Day
+      required:
+        - date
+        - on_period
+        - symptoms
+      type: object
+      properties:
+        date:
+          title: Date
+          type: string
+        on_period:
+          title: On Period
+          type: string
+        symptoms:
+          title: Symptoms
+          type: string
+    HTTPValidationError:
+      title: HTTPValidationError
+      type: object
+      properties:
+        detail:
+          title: Detail
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationError'
+    ValidationError:
+      title: ValidationError
+      required:
+        - loc
+        - msg
+        - type
+      type: object
+      properties:
+        loc:
+          title: Location
+          type: array
+          items:
+            type: string
+        msg:
+          title: Message
+          type: string
+        type:
+          title: Error Type
+          type: string

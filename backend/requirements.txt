@@ -47,7 +47,7 @@ python-dotenv==0.20.0
 sniffio==1.2.0; python_version >= '3.5'
 sqlalchemy==1.4.32
 starlette==0.35.0; python_version >= '3.6'
-typing-extensions==4.1.1; python_version >= '3.6'
+typing-extensions==4.8.0; python_version >= '3.6'
 uvicorn[standard]==0.17.6
 watchgod==0.8.1
 websockets==10.2
